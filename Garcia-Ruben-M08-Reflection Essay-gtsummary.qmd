@@ -1,0 +1,368 @@
+---
+title: "Summary Tables with gtsummary"
+subtitle: "Reflection on M08 | Revealjs Presentation"
+author: "Ruben Garcia"
+institute: "IBM 6400, Cal Poly Pomona"
+date: "`r Sys.Date()`"
+format: 
+  revealjs:
+    theme: serif
+    width: 1600
+    height: 900
+    footer: "Reflection on M08: gtsummary"
+    transition: slide
+    transition-speed: default
+    incremental: false
+    toc: true
+    toc-depth: 1
+    slide-number: true
+    scrollable: true
+    smaller: true
+    code-fold: false
+    code-overflow: wrap
+    number-sections: false
+    number-depth: 5
+    embed-resources: true
+    css: styles.css
+bibliography: references.bib
+editor: visual
+execute: 
+  echo: true
+  freeze: auto
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+library(tidyverse)
+library(haven)
+library(gtsummary)
+library(gt)
+```
+
+
+# Prompt 1: gtsummary Capabilities
+
+::: callout-note
+## Prompt
+
+In Step 1, you have seen how to create a summary table and modify it for various statistical analyses. Summarize the package's capabilities as explained by the speaker. How may the {gtsummary} benefit you for your school work or career?
+:::
+
+## Descriptive Tables with `tbl_summary()`
+
+In Dr. Jung's lecture, `tbl_summary()` is the starting point. It was demonstrated on the `trial` data (200 patients, two chemotherapy drugs).
+
+::: incremental
+- It **detects variable types** on its own and picks sensible statistics: median (Q1, Q3) for continuous variables, n (%) for categorical ones.
+- It **reports missing values** as "Unknown" rows, so nothing is hidden.
+- With `by =`, it splits the table by group (for example, Drug A vs. Drug B).
+- `add_overall()` and `add_n()` add the overall column and the sample size per variable.
+:::
+
+::: aside
+Data: `trial` (gtsummary) and `gss_cat` (forcats), as used in the Step 1 lecture.
+:::
+
+## Testing Differences Between Groups
+
+One extra line of code turns a descriptive table into a hypothesis test.
+
+::: fragment
+- `add_p()` picks the test automatically: **Wilcoxon rank-sum** for continuous variables and **Pearson's chi-square** for categorical ones.
+:::
+
+::: fragment
+- `add_difference()` gives a **Welch two-sample t-test**, with the mean difference and 95% confidence interval. I learned to be careful here, because switching to means and SDs still uses Wilcoxon unless I use `add_difference()`.
+:::
+
+::: fragment
+- `add_q(method = "bonferroni")` adjusts p-values when I run many tests at once.
+:::
+
+::: fragment
+- `add_difference(adj.vars = ...)` produces an **ANCOVA-style adjusted difference**.
+:::
+
+## Cross-Tabulation with `tbl_cross()`
+
+- `tbl_cross()` builds a row-by-column table with totals and row, column, or cell percentages, plus a chi-square p-value from `add_p()`.
+- The lecture noted that `tbl_summary()` can also run a chi-square test, but `tbl_cross()` makes the more attractive table. `tbl_summary()` is better when one table mixes several kinds of tests.
+- It also worked on survey data (`gss_cat`): marital status by race was significant at p \< .001.
+
+## Regression Tables with `tbl_regression()`
+
+::::: columns
+::: {.column width="50%"}
+**One-line model tables**
+
+- Logistic regression (`glm`) shows log-odds, or odds ratios with `exponentiate = TRUE`.
+- OLS multiple regression (`lm`) shows betas with 95% CIs.
+- Reference rows are included for categorical predictors.
+:::
+
+::: {.column width="50%"}
+**Useful add-ons**
+
+- `add_global_p()` for an overall p-value per variable
+- `add_vif()` to check collinearity
+- `add_glance_table()` for N, log-likelihood, AIC, BIC
+- `tbl_uvregression()` for one-predictor-at-a-time models
+:::
+:::::
+
+## Customizing and Combining Tables
+
+::: incremental
+- **Formatting:** `statistic`, `digits`, `label`, and `missing_text` change what each cell shows.
+- **Headers and notes:** `modify_header()`, `modify_spanning_header()`, `modify_footnote()`, and `modify_caption()` make a journal-style table.
+- **`as_gt()`:** converts a gtsummary table to a gt object so I can add `tab_header()` titles and subtitles.
+- **`tbl_merge()` and `tbl_stack()`:** put tables side by side or on top of each other, for example highway vs. city mileage models.
+- **Themes:** `theme_gtsummary_journal()` applies JAMA or *Quarterly Journal of Economics* styles.
+:::
+
+::: notes
+Everything above comes from the Step 1 lecture note (Jae Jung, "Summary table with gtsummary").
+:::
+
+## How gtsummary Benefits Me
+
+::::: columns
+::: {.column width="50%"}
+**School work**
+
+- My culminating project (CEP) will need descriptive tables, cross-tabs, and regression tables for survey data. gtsummary does each in a few lines.
+- Because the code is reproducible, I can re-run a table when the data changes and avoid copying numbers into a document by hand.
+- The same style works for my thesis and any journal submission.
+:::
+
+::: {.column width="50%"}
+**Career in digital marketing**
+
+- Comparing campaign groups (A/B tests, audience segments) uses the same `by =` and `add_p()` workflow as the drug comparison.
+- Regression tables can show which factors drive engagement or retention.
+- Clean, professional tables make results easy to present to non-technical stakeholders.
+:::
+:::::
+
+# Prompt 2: Dr. Sjoberg's Extended Presentation
+
+::: callout-note
+## Prompt
+
+In Step 2, you watched the extended presentation of the {gtsummary} package by Dr. Daniel Sjoberg, the very creator of the package.
+:::
+
+## 2.1 How Does gtsummary Differ from gt and gtExtras?
+
+::: callout-note
+## Prompt
+
+How does it differ from gt and gtExtras?
+:::
+
+| Package | Main purpose | What I have to do |
+|:-----------------------|:-----------------------|:-----------------------|
+| **gt** | General grammar of tables for any data frame [@iannone2024gt] | Choose and write every cell, header, and format myself |
+| **gtExtras** | Extends gt with extra themes, sparklines, and inline mini-plots | Start with a gt table, then add visual extras |
+| **gtsummary** | Statistical summary tables from data or models [@sjoberg2021gtsummary] | Pass in data or a model; it calculates and formats the statistics |
+
+::: fragment
+gtsummary was written as a companion to gt. The Step 1 lecture showed that `as_gt()` converts a gtsummary table into a gt object, so I can use both packages in the same table.
+:::
+
+::: notes
+Check this table against what Dr. Sjoberg actually says in the Step 2 video and adjust.
+:::
+
+## 2.2 Three New Things I Learned
+
+::: callout-note
+## Prompt
+
+Give three things you learned newly that were not explained in the lecture in Step 1.
+:::
+
+::: callout-warning
+## To finish before submitting
+
+I could not watch the 52-minute video, so these are placeholders. Replace each with something you saw there that was **not** in Step 1. Possible topics, based on the package documentation, are below. Keep only the ones the video covered.
+:::
+
+1.  **Reporting results inline:** `inline_text()` pulls statistics from a table straight into the sentences of a report.
+2.  **Saving tables to other formats:** gtsummary tables can be saved as image, HTML, Word, RTF, or LaTeX files, and converted for other engines such as flextable and kableExtra.
+3.  **Summarizing with any function:** the package can summarize data with any function, including user-written ones.
+
+# Prompt 3: Cross-Tabulation with CEP Data
+
+::: callout-note
+## Prompt
+
+Apply what you learned to your MSDM CEP data. Choose two appropriate variables for cross-tabulation and show if the two variables are associated or not. Use appropriate statistics to test if the two variables are associated. Code, produce the table, and interpret the result.
+:::
+
+## The CEP Data I Combined
+
+I merged two Collins College of Hospitality Management (CCHM) files:
+
+- **Retention cohorts:** for each Fall cohort (2018 to 2025), the cohort size and how many students were still enrolled one, two, and three years later.
+- **Yearly enrollment by term:** the college's Fall headcount, FTES, and average units for each academic year.
+
+Each cohort was matched to the Fall enrollment figures for the year it entered. Note that these are cohort-level counts, not individual survey responses.
+
+## Step 1: Import the Combined Data
+
+```{r}
+#| label: import-data
+
+cep_cohort_data <- read_csv("data/cohort_combined.csv")
+
+glimpse(cep_cohort_data)
+```
+
+## Step 2: Expand Counts into One Row per Student
+
+The cross-tab needs one row per student, so I turn the retained and not-retained counts into individual rows.
+
+```{r}
+#| label: expand-students
+
+cep_long_counts <- cep_cohort_data |>
+  select(cohort_year, retained_1yr, not_retained_1yr)
+
+cep_long_counts <- cep_long_counts |>
+  pivot_longer(
+    cols = c(retained_1yr, not_retained_1yr),
+    names_to = "retention_status",
+    values_to = "student_count"
+  )
+
+cep_student_data <- cep_long_counts |>
+  uncount(weights = student_count)
+
+cep_student_data <- cep_student_data |>
+  mutate(cohort_year = factor(cohort_year)) |>
+  mutate(
+    retention_status = factor(
+      retention_status,
+      levels = c("retained_1yr", "not_retained_1yr"),
+      labels = c("Retained after 1 year", "Not retained")
+    )
+  )
+
+glimpse(cep_student_data)
+```
+
+## Step 3: Cross-Tabulation with a Chi-Square Test
+
+```{r}
+#| label: crosstab-table
+
+cep_crosstab_table <- cep_student_data |>
+  tbl_cross(
+    row = cohort_year,
+    col = retention_status,
+    percent = "row",
+    label = list(
+      cohort_year ~ "Entering Cohort",
+      retention_status ~ "First-Year Retention"
+    )
+  )
+
+cep_crosstab_table <- cep_crosstab_table |>
+  add_p(test = "chisq.test") |>
+  bold_labels()
+
+cep_crosstab_table
+```
+
+## Interpretation: Cross-Tabulation
+
+I tested whether entering cohort and first-year retention are associated (N = 642 first-time, full-time freshmen).
+
+::: incremental
+- The chi-square test was significant: $\chi^2$(7) = 14.37, p = .045.
+- The effect is small (Cramér's V = .15).
+- Retention ranged from 76.9% (Fall 2021) to 92.5% (Fall 2024), so some cohorts retained noticeably better than others.
+- No expected cell count fell below 5, so the chi-square assumptions hold.
+:::
+
+::: notes
+Check these numbers against your rendered table before presenting.
+:::
+
+For CCHM, retention is not constant from year to year, so the cohort a student enters in is related to whether they return for a second year. The association is modest, and this analysis cannot say why. Candidate explanations such as pandemic-era disruption (the Fall 2021 dip) would need student-level data to test.
+
+# Prompt 4: Multiple Regression with CEP Data
+
+::: callout-note
+## Prompt
+
+Using the MSDM CEP data, run multiple regression. The dependent variable can be continuous or dichotomous. Regress a dependent variable on a set of independent variables. Code, produce the table, and interpret the result.
+:::
+
+## Step 1: Prepare the Regression Data
+
+The dependent variable is the first-year retention rate (%) of each cohort. The independent variables are the Fall college headcount and the Fall average units per student in the cohort's entry year.
+
+```{r}
+#| label: prepare-regression
+
+cep_regression_data <- cep_cohort_data |>
+  select(retention_rate_1yr, fall_headcount, fall_avg_units)
+
+glimpse(cep_regression_data)
+```
+
+## Step 2: Fit the Model
+
+```{r}
+#| label: fit-model
+
+cep_regression_model <- lm(
+  formula = retention_rate_1yr ~ fall_headcount + fall_avg_units,
+  data = cep_regression_data
+)
+```
+
+## Step 3: Produce the Regression Table
+
+```{r}
+#| label: regression-table
+
+cep_regression_table <- cep_regression_model |>
+  tbl_regression(
+    intercept = TRUE,
+    label = list(
+      fall_headcount ~ "Fall college headcount",
+      fall_avg_units ~ "Fall average units"
+    )
+  )
+
+cep_regression_table <- cep_regression_table |>
+  add_glance_source_note(include = c(r.squared, adj.r.squared, p.value)) |>
+  bold_p(t = 0.05) |>
+  bold_labels()
+
+cep_regression_table
+```
+
+## Interpretation: Multiple Regression
+
+::: incremental
+- The model was not significant: F(2, 5) = 0.45, p = .66, R² = .15, adjusted R² = −.19.
+- Neither predictor was significant: Fall headcount (b = 0.005, p = .74) and Fall average units (b = −8.17, p = .50).
+- With only eight cohorts, the model has very little statistical power.
+:::
+
+Within these data, I cannot show that college size or student course load explains differences in first-year retention across cohorts. This is a limitation of the data, not proof of no relationship. Fall headcount also tracks cohort size closely (r = .83) and FTES almost perfectly (r = .999), so I used only headcount to avoid collinearity. Future work should use student-level data, such as GPA, Pell status, first-generation status, and Instagram engagement, to model retention.
+
+# Appendix
+
+## Links {.appendix}
+
+- GitHub Repo: *paste link here*
+- GitHub Pages: *paste link here*
+
+## References
